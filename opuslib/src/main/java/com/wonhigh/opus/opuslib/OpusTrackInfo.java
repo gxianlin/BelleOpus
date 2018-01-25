@@ -1,6 +1,7 @@
 package com.wonhigh.opus.opuslib;
 
 import android.os.Environment;
+import android.text.TextUtils;
 
 import com.wonhigh.opus.opuslib.model.AudioPlayList;
 import com.wonhigh.opus.opuslib.model.AudioTime;
@@ -33,6 +34,7 @@ public class OpusTrackInfo {
     private AudioPlayList audioPlayList = new AudioPlayList();
     private AudioTime audioTime = new AudioTime();
 
+
     public static final String TITLE_TITLE = "TITLE";
     public static final String TITLE_ABS_PATH = "ABS_PATH";
     public static final String TITLE_DURATION = "DURATION";
@@ -41,10 +43,15 @@ public class OpusTrackInfo {
 
     private OpusTrackInfo() {
         // create OPlayer directory if it does not exist.
-        if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
-            return;
-        String sdcardPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-        appExtDir = sdcardPath + "/OpusLib/";
+
+//        if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
+//            return;
+//        String sdcardPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+
+        appExtDir = OpusInit.appExtDir;
+        if (TextUtils.isEmpty(appExtDir)){
+            throw new NullPointerException("File path cannot be empty, please set the file path first.");
+        }
         File fp = new File(appExtDir);
         if (!fp.exists()) {
             fp.mkdir();

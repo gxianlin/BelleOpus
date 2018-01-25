@@ -23,24 +23,32 @@ import static com.wonhigh.opus.opuslib.OpusEvent.RECORD_FINISHED;
 public class OpusRecorder {
     private static final String TAG = LogHelper.makeLogTag(OpusRecorder.class);
 
-    private static volatile OpusRecorder opusRecorder;
+    //录音文件保存名称前缀
+    public static String fileHeaderName = "OpusRecord";
 
+    //录音机状态
     private static final int STATE_NONE = 0;
     private static final int STATE_STARTED = 1;
+    private volatile int state = STATE_NONE;
 
+    //音频采样率
     private static final int RECORDER_SAMPLERATE = 16000;
+    //设置音频的录制的声道CHANNEL_IN_STEREO为双声道，CHANNEL_CONFIGURATION_MONO为单声道
     private static final int RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_MONO;
+    //音频数据格式:PCM 16位每个样本。保证设备支持。PCM 8位每个样本。不一定能得到设备支持。
     private static final int RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
 
-    private volatile int state = STATE_NONE;
+    //音频大小
+    private int bufferSize = 0;
 
     private AudioRecord recorder = null;
 
     private Thread recordingThread = new Thread();
 
     private OpusTool opusTool = new OpusTool();
+    private static volatile OpusRecorder opusRecorder;
 
-    private int bufferSize = 0;
+
     // Should be 1920, to meet with function writeFrame()
     private ByteBuffer fileBuffer = ByteBuffer.allocateDirect(1920);
 
@@ -52,6 +60,11 @@ public class OpusRecorder {
     private OpusRecorder() {
     }
 
+    /**
+     * 获取单例
+     *
+     * @return
+     */
     public static OpusRecorder getInstance() {
         if (opusRecorder == null) {
             synchronized (OpusRecorder.class) {
@@ -95,7 +108,7 @@ public class OpusRecorder {
 
         state = STATE_STARTED;
         if (file.isEmpty()) {
-            filePath = OpusTrackInfo.getInstance().getAValidFileName("OpusRecord");
+            filePath = OpusTrackInfo.getInstance().getAValidFileName(fileHeaderName);
         } else {
             filePath = file;
         }
@@ -118,6 +131,12 @@ public class OpusRecorder {
     }
 
 
+    /**
+     * 将数据写入文件
+     *
+     * @param buffer
+     * @param size
+     */
     private void writeAudioDataToOpus(ByteBuffer buffer, int size) {
         ByteBuffer finalBuffer = ByteBuffer.allocateDirect(size);
         finalBuffer.put(buffer);
@@ -146,6 +165,9 @@ public class OpusRecorder {
         }
     }
 
+    /**
+     * 将录音输输出流数据写入文件
+     */
     private void writeAudioDataToFile() {
         if (state != STATE_STARTED) return;
 
@@ -224,6 +246,7 @@ public class OpusRecorder {
             }
         }
     }
+
 
     private class RecordThread implements Runnable {
         public void run() {
