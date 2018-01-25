@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">BelleOpus</string>
+    <string name="hint">录音列表：点击列表进行播放</string>
+</resources>
