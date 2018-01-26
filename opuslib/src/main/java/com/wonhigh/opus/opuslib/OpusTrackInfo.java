@@ -126,7 +126,7 @@ public class OpusTrackInfo {
     }
 
     /**
-     * 创建文件名
+     * 创建文件名opus
      * 规则：根据传入的名+后缀
      *
      * @param prefix
@@ -150,6 +150,32 @@ public class OpusTrackInfo {
 
         return appExtDir + name + i + extention;
     }
+    /**
+     * 创建文件名pcm
+     * 规则：根据传入的名+后缀
+     *
+     * @param prefix
+     * @return
+     */
+    public String getPcmFileName(String prefix) {
+        String name = prefix;
+        String extention = ".pcm";
+        HashSet<String> set = new HashSet<>(100);
+        List<Map<String, Object>> lst = getTrackInfo().getList();
+        for (Map<String, Object> map : lst) {
+            set.add(map.get(OpusTrackInfo.TITLE_TITLE).toString());
+        }
+        int i = 0;
+        while (true) {
+            i++;
+            if (!set.contains(name + i + extention)) {
+                break;
+            }
+        }
+
+        return appExtDir + name + i + extention;
+    }
+
 
     private void prepareTrackInfo(File file) {
         try {

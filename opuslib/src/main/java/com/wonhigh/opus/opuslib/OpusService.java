@@ -3,6 +3,8 @@ package com.wonhigh.opus.opuslib;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.hardware.usb.UsbManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;

@@ -3,12 +3,18 @@ package com.wonhigh.opus.opuslib;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.util.Log;
 
 import com.wonhigh.opus.opuslib.model.AudioTime;
 import com.wonhigh.opus.opuslib.utils.LogHelper;
 import com.wonhigh.opus.opuslib.utils.Utils;
 
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -25,6 +31,7 @@ public class OpusRecorder {
 
     //录音文件保存名称前缀
     public static String fileHeaderName = "OpusRecord";
+    public static String pcmHeaderName = "PcmRecord";
 
     //录音机状态
     private static final int STATE_NONE = 0;
@@ -44,6 +51,7 @@ public class OpusRecorder {
     private AudioRecord recorder = null;
 
     private Thread recordingThread = new Thread();
+    private Thread pcmThread = new Thread();
 
     private OpusTool opusTool = new OpusTool();
     private static volatile OpusRecorder opusRecorder;
@@ -53,6 +61,7 @@ public class OpusRecorder {
     private ByteBuffer fileBuffer = ByteBuffer.allocateDirect(1920);
 
     private String filePath = null;
+    private String pcmPath = null;
     private OpusEvent eventSender = null;
     private Timer progressTimer = null;
     private AudioTime recordTime = new AudioTime();
@@ -109,8 +118,10 @@ public class OpusRecorder {
         state = STATE_STARTED;
         if (file.isEmpty()) {
             filePath = OpusTrackInfo.getInstance().getAValidFileName(fileHeaderName);
+            pcmPath = OpusTrackInfo.getInstance().getPcmFileName(pcmHeaderName);
         } else {
             filePath = file;
+            pcmPath = file;
         }
 //        filePath = file.isEmpty() ? initRecordFileName() : file;
         int rst = opusTool.startRecording(filePath);
@@ -128,8 +139,40 @@ public class OpusRecorder {
 
         recordingThread = new Thread(new RecordThread(), "OpusRecord Thread");
         recordingThread.start();
+
+        pcmThread = new Thread(new RecordPCMThread(), "PcmRecord Thread");
+        pcmThread.start();
+
+
     }
 
+    /**
+     * 保存PCM格式文件
+     */
+    private void writeAudioDataToPCM() {
+        try {
+            //输出流
+            OutputStream os = new FileOutputStream(pcmPath);
+            BufferedOutputStream bos = new BufferedOutputStream(os);
+            DataOutputStream dos = new DataOutputStream(bos);
+
+
+            short[] buffer = new short[bufferSize];
+
+            while (state == STATE_STARTED) {
+                int len = recorder.read(buffer, 0, bufferSize);
+                if (len != ERROR_INVALID_OPERATION) {
+                    for (int i = 0; i < len; i++) {
+                        dos.writeShort(buffer[i]);
+                    }
+                }
+            }
+
+            dos.close();
+        } catch (Throwable t) {
+            Log.e(TAG, "录音失败");
+        }
+    }
 
     /**
      * 将数据写入文件
@@ -169,10 +212,12 @@ public class OpusRecorder {
      * 将录音输输出流数据写入文件
      */
     private void writeAudioDataToFile() {
-        if (state != STATE_STARTED) return;
+        if (state != STATE_STARTED)
+            return;
 
+
+        //opus编码
         ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
-
         while (state == STATE_STARTED) {
             buffer.rewind();
             int len = recorder.read(buffer, bufferSize);
@@ -255,6 +300,15 @@ public class OpusRecorder {
             progressTimer.schedule(new ProgressTask(), 1000, 1000);
 
             writeAudioDataToFile();
+        }
+    }
+
+
+    private class RecordPCMThread implements Runnable {
+
+        @Override
+        public void run() {
+            writeAudioDataToPCM();
         }
     }
 }
